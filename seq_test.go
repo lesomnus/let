@@ -25,8 +25,7 @@ func TestSeq(t *testing.T) {
 				return nil
 			}),
 		)
-		defer task.Wait()
-		defer task.Close()
+		defer let.Halt(task)
 
 		go task.Run(t.Context())
 
@@ -53,8 +52,7 @@ func TestSeq(t *testing.T) {
 				return nil
 			}),
 		)
-		defer task.Wait()
-		defer task.Close()
+		defer let.Halt(task)
 
 		go task.Run(t.Context())
 

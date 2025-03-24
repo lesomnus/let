@@ -21,8 +21,7 @@ func TestNew(t *testing.T) {
 			wg.Done()
 			return nil
 		})
-		defer task.Wait()
-		defer task.Close()
+		defer let.Halt(task)
 
 		for range N {
 			go task.Run(t.Context())
@@ -42,8 +41,7 @@ func TestNew(t *testing.T) {
 				}
 			}
 		})
-		defer task.Wait()
-		defer task.Close()
+		defer let.Halt(task)
 
 		go task.Run(t.Context())
 
@@ -66,8 +64,7 @@ func TestNew(t *testing.T) {
 				}
 			}
 		})
-		defer task.Wait()
-		defer task.Close()
+		defer let.Halt(task)
 
 		go func() {
 			<-c // Ensure the select statement hit.
@@ -88,8 +85,7 @@ func TestNew(t *testing.T) {
 				}
 			}
 		})
-		defer task.Wait()
-		defer task.Close()
+		defer let.Halt(task)
 
 		go func() {
 			<-c // Ensure the select statement hit.
@@ -105,8 +101,7 @@ func TestNew(t *testing.T) {
 			i++
 			return nil
 		})
-		defer task.Wait()
-		defer task.Close()
+		defer let.Halt(task)
 
 		task.Stop(t.Context())
 		err := task.Run(t.Context())
@@ -119,8 +114,7 @@ func TestNew(t *testing.T) {
 			i++
 			return nil
 		})
-		defer task.Wait()
-		defer task.Close()
+		defer let.Halt(task)
 
 		task.Close()
 		err := task.Run(t.Context())

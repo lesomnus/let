@@ -21,6 +21,12 @@ type Task interface {
 	Wait() error
 }
 
+func Halt(t Task) error {
+	err := t.Close()
+	t.Wait()
+	return err
+}
+
 type task struct {
 	f func(ctx context.Context) error
 

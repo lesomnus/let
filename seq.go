@@ -7,8 +7,8 @@ import (
 )
 
 type seq struct {
-	root Task
-	ts   []Task
+	root  Task
+	tasks []Task
 }
 
 // Seq creates a Task that runs the given Tasks sequentially.
@@ -39,12 +39,12 @@ func (t seq) Run(ctx context.Context) error {
 }
 
 func (t seq) Stop(ctx context.Context) error {
-	errs := make([]error, 0, len(t.ts))
+	errs := make([]error, 0, len(t.tasks))
 
 	// Children must be stopped gracefully so stop the root last
 	// to prevent cancel of the root context.
 	// To prevent the run of the next step after a step finishes, stop it backward.
-	for _, v := range slices.Backward(t.ts) {
+	for _, v := range slices.Backward(t.tasks) {
 		errs = append(errs, v.Stop(ctx))
 	}
 	t.root.Stop(ctx)
@@ -53,12 +53,12 @@ func (t seq) Stop(ctx context.Context) error {
 }
 
 func (t seq) Close() error {
-	errs := make([]error, 0, len(t.ts))
+	errs := make([]error, 0, len(t.tasks))
 
 	// Children must be closed before the close of the root
 	// to get their error not the error caused by root context.
 	// To prevent the run of the next step after a step finishes, stop it backward.
-	for _, v := range slices.Backward(t.ts) {
+	for _, v := range slices.Backward(t.tasks) {
 		errs = append(errs, v.Close())
 	}
 	t.root.Close()
@@ -67,7 +67,7 @@ func (t seq) Close() error {
 }
 
 func (t seq) Wait() error {
-	for _, v := range t.ts {
+	for _, v := range t.tasks {
 		v.Wait()
 	}
 
