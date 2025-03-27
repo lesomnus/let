@@ -60,6 +60,12 @@ func New(f func(ctx context.Context) error) Task {
 	return NewWithContext(context.Background(), f)
 }
 
+func Nop() Task {
+	return New(func(ctx context.Context) error {
+		return nil
+	})
+}
+
 func (t *task) Run(ctx context.Context) error {
 	// Check if the task is already closed.
 	if t.closed.Load() {

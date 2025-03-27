@@ -18,6 +18,11 @@ type group struct {
 	err error
 }
 
+// NewRunner creates a Runner that runs multiple tasks simultaneously.
+// If a task fails, all its child tasks are stopped.
+// The [Stop], [Close], and [Wait] methods return the error from the first failed task.
+// Unlike [NewWithContext], cancel of the given context does not
+// result Stop of all the child Tasks.
 func NewGroupWithContext(ctx context.Context) Runner {
 	r := &group{tasks: []Task{}}
 	r.ctx, r.cancel = context.WithCancel(ctx)
@@ -25,15 +30,18 @@ func NewGroupWithContext(ctx context.Context) Runner {
 	return r
 }
 
+// NewRunner creates a Runner that runs multiple tasks simultaneously.
+// If a task fails, all its child tasks are stopped.
+// The [Stop], [Close], and [Wait] methods return the error from the first failed task.
 func NewGroup() Runner {
 	return NewGroupWithContext(context.Background())
 }
 
-func (r *group) Go(task Task) {
+func (r *group) Go(task Task) error {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 	if r.stopped {
-		return
+		return ErrClosed
 	}
 
 	r.tasks = append(r.tasks, task)
@@ -56,6 +64,7 @@ func (r *group) Go(task Task) {
 		r.err = err
 		r.stopTasks(context.Background())
 	}()
+	return nil
 }
 
 func (r *group) Run(ctx context.Context) error {
