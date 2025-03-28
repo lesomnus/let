@@ -2,6 +2,7 @@ package let
 
 import (
 	"context"
+	"sync/atomic"
 )
 
 type Task interface {
@@ -33,10 +34,12 @@ type task struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 
-	token chan struct{}
-	err   error
+	stopped atomic.Bool
+	closed  atomic.Bool
 
-	closer
+	err   error
+	token chan struct{}
+	done  chan struct{}
 }
 
 // NewWithContext creates a Task that allows only one Run at a time.
@@ -44,13 +47,14 @@ type task struct {
 // Cancel of the given context results Stop of the Task.
 func NewWithContext(ctx context.Context, f func(ctx context.Context) error) Task {
 	t := &task{
-		f:     f,
+		f: f,
+
 		token: make(chan struct{}, 1),
+		done:  make(chan struct{}),
 	}
 	t.ctx, t.cancel = context.WithCancel(ctx)
 	t.token <- struct{}{}
 
-	initCloser(&t.closer)
 	return t
 }
 
@@ -67,8 +71,8 @@ func Nop() Task {
 }
 
 func (t *task) Run(ctx context.Context) error {
-	// Check if the task is already closed.
-	if t.closed.Load() {
+	// Check if the task is already stopped.
+	if t.stopped.Load() {
 		return ErrClosed
 	}
 
@@ -80,14 +84,18 @@ func (t *task) Run(ctx context.Context) error {
 	case <-t.token:
 		// Previous task is done.
 	}
+	if t.stopped.Load() {
+		return ErrClosed
+	}
 
 	defer func() {
-		t.token <- struct{}{}
-
-		if t.ctx.Err() != nil {
+		if t.stopped.Load() {
 			// Task was stopped so notifies that it was the last run.
+			// Unblock `Wait` when the `Stop` is canceled.
 			t.close()
 		}
+
+		t.token <- struct{}{}
 	}()
 
 	ctx, cancel := context.WithCancel(ctx)
@@ -100,8 +108,16 @@ func (t *task) Run(ctx context.Context) error {
 	return t.err
 }
 
-func (t *task) Stop(ctx context.Context) error {
+func (t *task) stop() {
+	if t.stopped.Swap(true) {
+		return
+	}
+
 	t.cancel()
+}
+
+func (t *task) Stop(ctx context.Context) error {
+	t.stop()
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -117,14 +133,23 @@ func (t *task) Done() <-chan struct{} {
 	return t.done
 }
 
+func (t *task) close() {
+	if t.closed.Swap(true) {
+		return
+	}
+
+	close(t.done)
+}
+
 func (t *task) Close() error {
-	t.cancel()
+	t.stop()
+	defer t.close()
+
 	select {
 	case <-t.token:
 	case <-t.done:
 	}
 
-	t.close()
 	return nil
 }
 

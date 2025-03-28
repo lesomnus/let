@@ -13,11 +13,8 @@ func Loop(t Task) Task {
 
 func (t loop) Run(ctx context.Context) error {
 	for {
-		err := t.Task.Run(ctx)
-		if err == nil {
-			continue
+		if err := t.Task.Run(ctx); err != nil {
+			return err
 		}
-
-		return err
 	}
 }

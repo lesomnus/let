@@ -8,29 +8,43 @@ import (
 )
 
 type httpServe struct {
-	s    *http.Server
+	s *http.Server
+
 	base Task
+	done chan struct{}
 
-	stop      func()
-	stop_done chan struct{}
-	stop_err  error
+	stop     func()
+	stop_err error
 
-	closer
+	close     func()
+	close_err error
 }
 
 func newHttpServe(s *http.Server, base Task) Task {
-	t := &httpServe{
-		s:    s,
-		base: base,
-
-		stop_done: make(chan struct{}),
-	}
-	t.stop = sync.OnceFunc(func() {
-		t.stop_err = s.Shutdown(context.TODO())
-		close(t.stop_done)
+	base = Once(base)
+	done := make(chan struct{})
+	close := sync.OnceFunc(func() {
+		close(done)
 	})
 
-	initCloser(&t.closer)
+	t := &httpServe{
+		s: s,
+
+		base: base,
+		done: done,
+	}
+	t.stop = sync.OnceFunc(func() {
+		ctx := context.Background()
+		t.stop_err = s.Shutdown(ctx)
+		base.Stop(ctx)
+		close()
+	})
+	t.close = sync.OnceFunc(func() {
+		t.close_err = s.Close()
+		base.Close()
+		close()
+	})
+
 	return t
 }
 
@@ -51,18 +65,18 @@ func (t *httpServe) Run(ctx context.Context) error {
 }
 
 func (t *httpServe) Stop(ctx context.Context) error {
-	t.stop()
+	go t.stop()
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
-	case <-t.stop_done:
+	case <-t.done:
 		return t.stop_err
 	}
 }
 
 func (t *httpServe) Close() error {
-	defer t.close()
-	return t.s.Close()
+	t.close()
+	return t.close_err
 }
 
 func (t *httpServe) Wait() error {

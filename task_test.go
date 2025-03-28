@@ -33,23 +33,22 @@ func TestNew(t *testing.T) {
 	t.Run("run can be canceled before its start", func(t *testing.T) {
 		c := make(chan struct{})
 		task := let.New(func(ctx context.Context) error {
-			for {
-				select {
-				case c <- struct{}{}:
-				case <-ctx.Done():
-					return nil
-				}
-			}
+			<-c
+			<-ctx.Done()
+			return nil
 		})
 		defer let.Halt(task)
 
 		go task.Run(t.Context())
 
-		<-c // Ensure the select statement hit.
+		// Ensure the run started.
+		c <- struct{}{}
 
 		ctx, cancel := context.WithCancel(t.Context())
 		cancel()
 
+		// Another Run is not returned so it should be blocked
+		// but is does not because the context is canceled.
 		err := task.Run(ctx)
 		require.ErrorIs(t, err, ctx.Err())
 	})

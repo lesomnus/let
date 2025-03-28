@@ -23,7 +23,7 @@ func TestGroup(t *testing.T) {
 			return nil
 		}))
 
-		close(c)
+		c <- struct{}{}
 
 		err := r.Wait()
 		require.Equal(t, io.EOF, err)
