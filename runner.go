@@ -3,6 +3,7 @@ package let
 import (
 	"context"
 	"errors"
+	"slices"
 	"sync"
 )
 
@@ -73,7 +74,7 @@ func (r *runner) Stop(ctx context.Context) error {
 	r.stop()
 
 	errs := []error{}
-	for _, t := range r.tasks {
+	for _, t := range slices.Backward(r.tasks) {
 		if err := t.Stop(ctx); err != nil && err != ErrClosed {
 			errs = append(errs, err)
 		}
@@ -91,7 +92,7 @@ func (r *runner) Close() error {
 	defer r.cancel()
 
 	errs := []error{}
-	for _, t := range r.tasks {
+	for _, t := range slices.Backward(r.tasks) {
 		if err := t.Close(); err != nil && err != ErrClosed {
 			errs = append(errs, err)
 		}
@@ -104,7 +105,7 @@ func (r *runner) Wait() error {
 	<-r.ctx.Done()
 
 	errs := []error{}
-	for _, t := range r.tasks {
+	for _, t := range slices.Backward(r.tasks) {
 		errs = append(errs, t.Wait())
 	}
 

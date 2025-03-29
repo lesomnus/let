@@ -47,8 +47,8 @@ func (t seq) Stop(ctx context.Context) error {
 	for _, v := range slices.Backward(t.tasks) {
 		errs = append(errs, v.Stop(ctx))
 	}
-	t.root.Stop(ctx)
 
+	t.root.Stop(ctx)
 	return errors.Join(errs...)
 }
 
@@ -61,15 +61,17 @@ func (t seq) Close() error {
 	for _, v := range slices.Backward(t.tasks) {
 		errs = append(errs, v.Close())
 	}
-	t.root.Close()
 
+	t.root.Close()
 	return errors.Join(errs...)
 }
 
 func (t seq) Wait() error {
-	for _, v := range t.tasks {
-		v.Wait()
+	errs := make([]error, 0, len(t.tasks))
+	for _, v := range slices.Backward(t.tasks) {
+		errs = append(errs, v.Wait())
 	}
 
-	return t.root.Wait()
+	t.root.Wait()
+	return errors.Join(errs...)
 }

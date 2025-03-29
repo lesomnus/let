@@ -3,6 +3,7 @@ package let
 import (
 	"context"
 	"errors"
+	"slices"
 	"sync"
 )
 
@@ -80,7 +81,7 @@ func (r *group) stop() {
 
 func (r *group) stopTasks(ctx context.Context) error {
 	errs := []error{}
-	for _, t := range r.tasks {
+	for _, t := range slices.Backward(r.tasks) {
 		if err := t.Stop(ctx); err != nil && err != ErrClosed {
 			errs = append(errs, err)
 		}
@@ -104,7 +105,7 @@ func (r *group) Close() error {
 	defer r.cancel()
 
 	errs := []error{}
-	for _, t := range r.tasks {
+	for _, t := range slices.Backward(r.tasks) {
 		if err := t.Close(); err != nil && err != ErrClosed {
 			errs = append(errs, err)
 		}
