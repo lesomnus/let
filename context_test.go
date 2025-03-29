@@ -8,16 +8,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestWithContext(t *testing.T) {
+func TestWithinContext(t *testing.T) {
 	t.Run("context is injected", func(t *testing.T) {
 		type k string
 		ctx := context.WithValue(t.Context(), k("foo"), "bar")
 
 		v := ""
-		task := let.OverrideContext(ctx, let.New(func(ctx context.Context) error {
+		task := let.NewWithinContext(ctx, func(ctx context.Context) error {
 			v, _ = ctx.Value(k("foo")).(string)
 			return nil
-		}))
+		})
 		defer let.Halt(task)
 
 		task.Run(t.Context())
@@ -28,13 +28,13 @@ func TestWithContext(t *testing.T) {
 
 		v := ""
 		c := make(chan struct{})
-		task := let.OverrideContext(ctx, let.New(func(ctx context.Context) error {
+		task := let.NewWithinContext(ctx, func(ctx context.Context) error {
 			<-c
 			<-ctx.Done()
 			v = "foo"
 			<-c
 			return nil
-		}))
+		})
 		defer let.Halt(task)
 
 		go task.Run(ctx)

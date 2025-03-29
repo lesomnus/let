@@ -64,6 +64,15 @@ func New(f func(ctx context.Context) error) Task {
 	return NewWithContext(context.Background(), f)
 }
 
+// NewWithinContext creates a Task that ensures only one Run executes at a time.
+// Each Run starts only after the previous Run has completed and blocks until it finishes.
+// The provided `ctx` is passed to `Run` and canceling the given context stops the Task.
+// This is useful when you want to use your context while passing the Task to a Runner.
+// Keep in mind that you loose access to the caller's context.
+func NewWithinContext(ctx context.Context, f func(ctx context.Context) error) Task {
+	return OverrideContext(ctx, New(f))
+}
+
 func Nop() Task {
 	return New(func(ctx context.Context) error {
 		return nil
