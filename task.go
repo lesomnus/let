@@ -42,9 +42,9 @@ type task struct {
 	done  chan struct{}
 }
 
-// NewWithContext creates a Task that allows only one Run at a time.
-// The Run starts only after the previous Run has finished and blocked until the run finished.
-// Cancel of the given context results Stop of the Task.
+// NewWithContext creates a Task that ensures only one Run executes at a time.
+// Each Run starts only after the previous Run has completed and blocks until it finishes.
+// The provided `ctx` is not passed to `Run`, but canceling the given context stops the Task.
 func NewWithContext(ctx context.Context, f func(ctx context.Context) error) Task {
 	t := &task{
 		f: f,
@@ -143,13 +143,7 @@ func (t *task) close() {
 
 func (t *task) Close() error {
 	t.stop()
-	defer t.close()
-
-	select {
-	case <-t.token:
-	case <-t.done:
-	}
-
+	t.close()
 	return nil
 }
 
