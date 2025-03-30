@@ -14,6 +14,8 @@ func TestGroup(t *testing.T) {
 		c := make(chan struct{})
 
 		r := let.NewGroup()
+		go r.Run(t.Context())
+
 		r.Go(let.New(func(ctx context.Context) error {
 			<-c
 			return io.EOF

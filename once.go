@@ -20,6 +20,6 @@ func (t *once) Run(ctx context.Context) error {
 		return ErrClosed
 	}
 
-	defer t.Stop(ctx)
+	defer Halt(t.Task)
 	return t.Task.Run(ctx)
 }
