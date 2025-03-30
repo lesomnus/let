@@ -151,9 +151,10 @@ func (r *runner) Stop(ctx context.Context) error {
 }
 
 func (r *runner) Close() error {
-	r.stop()
 	defer r.cancel()
-	defer close(r.stop_done)
+	if !r.stop() {
+		defer close(r.stop_done)
+	}
 
 	errs := []error{}
 	for _, t := range slices.Backward(r.tasks) {

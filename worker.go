@@ -142,9 +142,10 @@ func (r *worker) Stop(ctx context.Context) error {
 }
 
 func (r *worker) Close() error {
-	r.stop()
 	defer r.cancel()
-	defer close(r.stop_done)
+	if !r.stop() {
+		defer close(r.stop_done)
+	}
 
 	for t := range r.tasks {
 		t.Close()
