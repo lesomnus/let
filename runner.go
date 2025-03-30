@@ -60,6 +60,7 @@ func (r *runner) Go(task Task) error {
 }
 
 func (r *runner) Run(ctx context.Context) error {
+	<-r.ctx.Done()
 	return nil
 }
 

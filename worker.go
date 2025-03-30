@@ -61,6 +61,7 @@ func (r *worker) Go(task Task) error {
 }
 
 func (r *worker) Run(ctx context.Context) error {
+	<-r.ctx.Done()
 	return nil
 }
 

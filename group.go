@@ -69,6 +69,7 @@ func (r *group) Go(task Task) error {
 }
 
 func (r *group) Run(ctx context.Context) error {
+	<-r.ctx.Done()
 	return nil
 }
 
