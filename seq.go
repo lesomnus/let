@@ -31,14 +31,14 @@ func Seq(ts ...Task) Task {
 		}
 		return nil
 	})
-	return seq{t, ts}
+	return &seq{t, ts}
 }
 
-func (t seq) Run(ctx context.Context) error {
+func (t *seq) Run(ctx context.Context) error {
 	return t.root.Run(ctx)
 }
 
-func (t seq) Stop(ctx context.Context) error {
+func (t *seq) Stop(ctx context.Context) error {
 	errs := make([]error, 0, len(t.tasks))
 
 	// Children must be stopped gracefully so stop the root last
@@ -52,7 +52,7 @@ func (t seq) Stop(ctx context.Context) error {
 	return errors.Join(errs...)
 }
 
-func (t seq) Close() error {
+func (t *seq) Close() error {
 	errs := make([]error, 0, len(t.tasks))
 
 	// Children must be closed before the close of the root
@@ -66,7 +66,7 @@ func (t seq) Close() error {
 	return errors.Join(errs...)
 }
 
-func (t seq) Wait() error {
+func (t *seq) Wait() error {
 	errs := make([]error, 0, len(t.tasks))
 	for _, v := range slices.Backward(t.tasks) {
 		errs = append(errs, v.Wait())
