@@ -7,8 +7,8 @@ type loop struct {
 }
 
 // Loop creates a Task that repeatedly runs the given Task until it returns an error.
-func Loop(t Task) Task {
-	return loop{t}
+func Loop(ts ...Task) Task {
+	return loop{Seq(ts...)}
 }
 
 func (t loop) Run(ctx context.Context) error {
